@@ -1,6 +1,6 @@
 ---
 layout: default 
-title: 123 
+title: Android 高效处理图片 
 
 ---
 本文是我参考Android的官方文档写的，官网[地址](https://developer.android.com/training/displaying-bitmaps/index.html)    
@@ -69,7 +69,141 @@ decodeSampledBitmapFromResource(getResources(), R.id.myimage, 100, 100));
 这里面演示的是使用本地的资源图片，真正使用过程中会加载各种资源，根据资源的不同使用BitmapFactory.decode的不  
 同的方法就可以了。
 
-# 
+# 子线程中处理bitmaps
+	 
+## 使用Asynctask
+
+*BitmapFactory.decode方法不应该在主线程中调用，因为这会阻塞主线程导致用户体验不好。  
+
+{% highlight java linenos %}
+class BitmapWorkerTask extends AsyncTask<Integer, Void, Bitmap> {
+    private final WeakReference<ImageView> imageViewReference;
+    private int data = 0;
+
+    public BitmapWorkerTask(ImageView imageView) {
+        // Use a WeakReference to ensure the ImageView can be garbage collected
+        imageViewReference = new WeakReference<ImageView>(imageView);
+    }
+
+    // Decode image in background.
+    @Override
+    protected Bitmap doInBackground(Integer... params) {
+        data = params[0];
+        return decodeSampledBitmapFromResource(getResources(), data, 100, 100));
+    }
+
+    // Once complete, see if ImageView is still around and set bitmap.
+    @Override
+    protected void onPostExecute(Bitmap bitmap) {
+        if (imageViewReference != null && bitmap != null) {
+            final ImageView imageView = imageViewReference.get();
+            if (imageView != null) {
+                imageView.setImageBitmap(bitmap);
+            }
+        }
+    }
+}
+{% endhighlight %}
+	* 使用WeakReference，主要是确保在必要的时候可以被垃圾回收器回收，在onPostExecute对图片进行操作  
+	前需要进行检查，因为不能保证imageView一定存在，因为用户可能已经离开这个界面了，或者其他因素等等。。。  
+	* 开始任务的代码就很简单了
+{% highlight java linenos %}
+public void loadBitmap(int resId, ImageView imageView) {
+    BitmapWorkerTask task = new BitmapWorkerTask(imageView);
+    task.execute(resId);
+}
+{% endhighlight %}
+##处理并发
+*一般的控件像ListView和Gridview结合Asynctask加载图片的时候会有新的问题，为了提高使用效率，  
+当用户滑动的时候这些控件会重复利用子控件，如果每一个imageview都触发一个Task，当task结束的时候，对应的  
+imageview可能已经被复用了，或者被别的控件使用了，更重要的是我们不能保证task结束的顺序。这篇[博客](http://android-developers.blogspot.com/2010/07/multithreading-for-performance.html)深入讨论了并发的问题，并且提出了  
+不错的解决方案，接下来我们就模仿它写个类似的方案。
+*自定义一个继承BitmapDrawable的专门的类，它的作用就是在Task结束的时候用来展示imageview的内容。
+{% highlight java linenos %}
+static class AsyncDrawable extends BitmapDrawable {
+    private final WeakReference<BitmapWorkerTask> bitmapWorkerTaskReference;
+
+    public AsyncDrawable(Resources res, Bitmap bitmap,
+            BitmapWorkerTask bitmapWorkerTask) {
+        super(res, bitmap);
+        bitmapWorkerTaskReference =
+            new WeakReference<BitmapWorkerTask>(bitmapWorkerTask);
+    }
+
+    public BitmapWorkerTask getBitmapWorkerTask() {
+        return bitmapWorkerTaskReference.get();
+    }
+}
+{% endhighlight %}
+
+*在执行BitmapWorkerTask之前，你可以创建一个AsyncDrawable，并且绑定Imagview。
+*下面的方法是为了检测imageview是否有相关的Task启动了
+{% highlight java linenos %}
+private static BitmapWorkerTask getBitmapWorkerTask(ImageView imageView) {
+   if (imageView != null) {
+       final Drawable drawable = imageView.getDrawable();
+       if (drawable instanceof AsyncDrawable) {
+           final AsyncDrawable asyncDrawable = (AsyncDrawable) drawable;
+           return asyncDrawable.getBitmapWorkerTask();
+       }
+    }
+    return null;
+}
+{% endhighlight %}
+
+*是否取消之前的任务（这里比较复杂：详见代码分析）
+{% highlight java linenos %}
+public static boolean cancelPotentialWork(int data, ImageView imageView) {
+    final BitmapWorkerTask bitmapWorkerTask = getBitmapWorkerTask(imageView);
+
+    if (bitmapWorkerTask != null) {
+        final int bitmapData = bitmapWorkerTask.data;
+        // If bitmapData is not yet set or it differs from the new data
+        if (bitmapData == 0 || bitmapData != data) {
+            // Cancel previous task
+            bitmapWorkerTask.cancel(true);
+        } else {
+            // The same work is already in progress
+            return false;
+        }
+    }
+    // No task associated with the ImageView, or an existing task was cancelled
+    return true;
+}
+{% endhighlight %}
+
+*加载图片
+{% highlight java linenos %}
+public void loadBitmap(int resId, ImageView imageView) {
+    if (cancelPotentialWork(resId, imageView)) {
+        final BitmapWorkerTask task = new BitmapWorkerTask(imageView);
+        final AsyncDrawable asyncDrawable =
+                new AsyncDrawable(getResources(), mPlaceHolderBitmap, task);
+        imageView.setImageDrawable(asyncDrawable);
+        task.execute(resId);
+    }
+}
+{% endhighlight %}
+*最后一步就是在onpost中设置图片的内容
+{% highlight java linenos %}
+@Override
+    protected void onPostExecute(Bitmap bitmap) {
+        if (isCancelled()) {
+            bitmap = null;
+        }
+
+        if (imageViewReference != null && bitmap != null) {
+            final ImageView imageView = imageViewReference.get();
+            final BitmapWorkerTask bitmapWorkerTask =
+                    getBitmapWorkerTask(imageView);
+            if (this == bitmapWorkerTask && imageView != null) {
+                imageView.setImageBitmap(bitmap);
+            }
+        }
+    }
+{% endhighlight %}
+
+
 
 
 
