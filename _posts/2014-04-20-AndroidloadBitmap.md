@@ -22,7 +22,7 @@ String imageType = options.outMimeType;
 这里面主要通过设置 options.inJustDecodeBounds = true;让我们不但可以读出资源图片的type,宽和高，而且最重要的是不会产生实际的bitmap,换句话说就是不会占用内存，也就不会出现OOM的情况。
 拿到图片的宽高，再去做处理就比较简单了，不过也要根据不同的需求做不同的处理（主要根据需求：例如显示在多大的imagview上面，屏幕的尺  寸和分辨率。。。）。
 使用inSampleSize 对图片进行等比压缩。例如：inSampleSize=4，就是把图片压缩为原来的1/4。
-{% highlight java %}
+{% highlight java linenos %}
 public static int calculateInSampleSize(
     BitmapFactory.Options options, int reqWidth, int reqHeight) {
 // Raw height and width of image
@@ -47,7 +47,7 @@ return inSampleSize;
 }
 	{% endhighlight %}
 
-{% highlight java %}
+{% highlight java  linenos %}
 public static Bitmap decodeSampledBitmapFromResource(Resources res, int resId,
     int reqWidth, int reqHeight) {
 
