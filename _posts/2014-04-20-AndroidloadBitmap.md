@@ -73,7 +73,7 @@ decodeSampledBitmapFromResource(getResources(), R.id.myimage, 100, 100));
 	 
 ## 使用Asynctask
 
-*BitmapFactory.decode方法不应该在主线程中调用，因为这会阻塞主线程导致用户体验不好。  
+* BitmapFactory.decode方法不应该在主线程中调用，因为这会阻塞主线程导致用户体验不好。  
 
 {% highlight java linenos %}
 class BitmapWorkerTask extends AsyncTask<Integer, Void, Bitmap> {
@@ -104,21 +104,29 @@ class BitmapWorkerTask extends AsyncTask<Integer, Void, Bitmap> {
     }
 }
 {% endhighlight %}
-	* 使用WeakReference，主要是确保在必要的时候可以被垃圾回收器回收，在onPostExecute对图片进行操作  
+
+*  使用WeakReference，主要是确保在必要的时候可以被垃圾回收器回收，在onPostExecute对图片进行操作  
 	前需要进行检查，因为不能保证imageView一定存在，因为用户可能已经离开这个界面了，或者其他因素等等。。。  
-	* 开始任务的代码就很简单了
+
+*  开始任务的代码就很简单了
+
 {% highlight java linenos %}
 public void loadBitmap(int resId, ImageView imageView) {
     BitmapWorkerTask task = new BitmapWorkerTask(imageView);
     task.execute(resId);
 }
 {% endhighlight %}
+
 ##处理并发
-*一般的控件像ListView和Gridview结合Asynctask加载图片的时候会有新的问题，为了提高使用效率，  
+
+* 一般的控件像ListView和Gridview结合Asynctask加载图片的时候会有新的问题，为了提高使用效率，  
+
 当用户滑动的时候这些控件会重复利用子控件，如果每一个imageview都触发一个Task，当task结束的时候，对应的  
 imageview可能已经被复用了，或者被别的控件使用了，更重要的是我们不能保证task结束的顺序。这篇[博客](http://android-developers.blogspot.com/2010/07/multithreading-for-performance.html)深入讨论了并发的问题，并且提出了  
 不错的解决方案，接下来我们就模仿它写个类似的方案。
-*自定义一个继承BitmapDrawable的专门的类，它的作用就是在Task结束的时候用来展示imageview的内容。
+
+* 自定义一个继承BitmapDrawable的专门的类，它的作用就是在Task结束的时候用来展示imageview的内容。
+
 {% highlight java linenos %}
 static class AsyncDrawable extends BitmapDrawable {
     private final WeakReference<BitmapWorkerTask> bitmapWorkerTaskReference;
@@ -136,8 +144,10 @@ static class AsyncDrawable extends BitmapDrawable {
 }
 {% endhighlight %}
 
-*在执行BitmapWorkerTask之前，你可以创建一个AsyncDrawable，并且绑定Imagview。
-*下面的方法是为了检测imageview是否有相关的Task启动了
+* 在执行BitmapWorkerTask之前，你可以创建一个AsyncDrawable，并且绑定Imagview。
+
+* 下面的方法是为了检测imageview是否有相关的Task启动了
+
 {% highlight java linenos %}
 private static BitmapWorkerTask getBitmapWorkerTask(ImageView imageView) {
    if (imageView != null) {
@@ -151,7 +161,8 @@ private static BitmapWorkerTask getBitmapWorkerTask(ImageView imageView) {
 }
 {% endhighlight %}
 
-*是否取消之前的任务（这里比较复杂：详见代码分析）
+* 是否取消之前的任务（这里比较复杂：详见代码分析）  
+
 {% highlight java linenos %}
 public static boolean cancelPotentialWork(int data, ImageView imageView) {
     final BitmapWorkerTask bitmapWorkerTask = getBitmapWorkerTask(imageView);
@@ -172,7 +183,8 @@ public static boolean cancelPotentialWork(int data, ImageView imageView) {
 }
 {% endhighlight %}
 
-*加载图片
+* 加载图片
+
 {% highlight java linenos %}
 public void loadBitmap(int resId, ImageView imageView) {
     if (cancelPotentialWork(resId, imageView)) {
@@ -183,8 +195,10 @@ public void loadBitmap(int resId, ImageView imageView) {
         task.execute(resId);
     }
 }
-{% endhighlight %}
-*最后一步就是在onpost中设置图片的内容
+{% endhighlight %}  
+
+* 最后一步就是在onpost中设置图片的内容
+
 {% highlight java linenos %}
 @Override
     protected void onPostExecute(Bitmap bitmap) {
