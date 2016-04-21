@@ -1,5 +1,5 @@
 baseurl: /Blog
-pygments: true
 safe: true
 auto: true
 mardown: redcarpet
+highlighter：pygments
