@@ -72,7 +72,8 @@
 .vi { color: #40ffff } /* Name.Variable.Instance */
 .il { color: #3677a9 } /* Literal.Number.Integer.Long */
 .content {
-	background-color: #b6b6b6;
+	color: #b6b6b6;
+	background-color: white;
 	margin: 50px auto;
 
 }
