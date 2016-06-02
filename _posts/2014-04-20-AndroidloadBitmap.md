@@ -1,7 +1,6 @@
 ---
 layout: default 
 title: Android 高效处理图片 
-
 ---
 本文是我参考Android的官方文档写的，官网[地址](https://developer.android.com/training/displaying-bitmaps/index.html)    
 
