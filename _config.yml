@@ -12,7 +12,7 @@ title: Blog
 defaults:
   -
     scope:
-      path: "" # empty string for all files
+      path: "Blog" # empty string for all files
     values:
       title: Blog
 
