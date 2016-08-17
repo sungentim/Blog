@@ -6,8 +6,10 @@ exclude: ["README.md"] # files to exclude
 highlighter: pygments
 markdown: kramdown
 disqus: Blog
+baseurl: "/Blog/"
 google_analytics: Blog
 title: Blog
+
 
 defaults:
   -
