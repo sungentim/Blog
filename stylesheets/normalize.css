@@ -423,3 +423,7 @@ td,
 th {
   padding: 0;
 }
+.content{
+  width: 100%;
+  padding: 20px;
+}
