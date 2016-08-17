@@ -20,7 +20,7 @@ disqus: # add disqus shortname here
 author: sungentim
 bio:    # your bio
 email: sungentim@gmail.com
-email_md5: # md5 hash of your email
+email_md5: 5994e626dd9d51a4445a8501508754e4
 twitter_username:
 github_username: sungentim
 
