@@ -2,14 +2,14 @@
 layout: post
 title: Configuration
 categories: [general, setup, demo]
-tags: [demo, dbyll, dbtek, setup]
+tags: [demo, Blog, dbtek, setup]
 fullview: true
 ---
 
 In your config file change these settings
 
 {% highlight yaml %}
-title: dbyll
+title: Blog
 author:  
   name: yourname  
   email: youremail  
